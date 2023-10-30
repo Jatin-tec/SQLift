@@ -1,0 +1,8 @@
+# env 
+*.env
+
+# data
+dataset.csv
+
+# python
+__pycache__/
