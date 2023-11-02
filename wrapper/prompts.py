@@ -1,5 +1,5 @@
 # Analyst Prompts:
-from Wrapper.db import run_query
+from wrapper.db import run_query
 import pandas as pd
 
 QUALIFIED_TABLE_NAME = "transactions"
@@ -24,7 +24,10 @@ SQL_PROMPT = """
     ```sql
     (select 1) union (select 2)
     ```
-    2. I'll be creating pandas dataframe from the sql query response so MAKE SURE to also include list of column names in your response wraped inside <columns> tag.
+    2. I'll be creating pandas dataframe from the sql query response so MAKE SURE to also include list of column names in your response wraped inside <columns> tag e.g
+    ```columns
+    id, date, amount
+    ```
     3. If I don't tell you to find a limited set of results in the sql query or question, you MUST limit the number of responses to 10.
     4. Text / string where clauses must be fuzzy match e.g ilike %keyword%
     5. Make sure to generate a single sql code, not multiple. 

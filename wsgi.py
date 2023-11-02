@@ -1,12 +1,13 @@
-from Wrapper.prompts import get_sql_system_prompt
-from Wrapper.main import LLMWrapper
-from Wrapper.db import run_query
-import re
+from wrapper.prompts import get_sql_system_prompt
+from wrapper.main import LLMWrapper
+from wrapper.db import run_query
 import pandas as pd
+import re
 
 messages = [{"role": "system", "content": get_sql_system_prompt()}]
 
 if __name__ == "__main__":
+    print("Hello World")
     wrapper = LLMWrapper()
 
     index = 0

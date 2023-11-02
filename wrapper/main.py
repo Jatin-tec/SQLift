@@ -2,10 +2,10 @@ import time
 import openai
 import os
 import pdb
-from Wrapper.prompts import get_sql_system_prompt
+from wrapper.prompts import get_sql_system_prompt
 from dotenv import load_dotenv
 import json
-from Wrapper.prompts import get_chat_summary_prompt
+from wrapper.prompts import get_chat_summary_prompt
 
 class LLMWrapper:
     """Wrapper class for the LLM API."""
@@ -62,7 +62,7 @@ class LLMWrapper:
                         temperature=self.temperature,
                         stream=True,
                     )
-                    return response 
+                    return response
                 
                 else:
                     CHAT_PROMPT = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
@@ -74,7 +74,7 @@ class LLMWrapper:
                         stream=True,
                     )
                     return response
-
+                
             except openai.error.RateLimitError as e:
                 self._handle_rate_limit()
                 return self._send_request(CHAT_PROMPT)

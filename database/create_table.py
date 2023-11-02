@@ -6,7 +6,7 @@ import os
 # Load environment variables from .env.db file
 from dotenv import load_dotenv
 
-load_dotenv("../.env.db")
+load_dotenv(".env.db")
 
 print("Creating table and importing data from CSV file...")
 print("This might take a while...")
@@ -20,7 +20,7 @@ port = "5432"  # Default PostgreSQL port
 
 
 # CSV file path
-csv_file_path = "../dataset.csv"
+csv_file_path = "dataset.csv"
 
 # Establish database connection
 conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
