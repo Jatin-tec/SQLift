@@ -2,24 +2,30 @@ import time
 import openai
 import os
 import pdb
-from wrapper.prompts import get_sql_system_prompt
+from wrapper.prompts import get_sql_system_prompt, get_visualisation_system_prompt
 from dotenv import load_dotenv
 import json
 from wrapper.prompts import get_chat_summary_prompt
 
 class LLMWrapper:
     """Wrapper class for the LLM API."""
-    def __init__(self, max_tokens=3000, model="gpt-3.5-turbo", max_try=2, temprature=0):
+    def __init__(self, max_tokens=3000, model="gpt-3.5-turbo", max_try=2, temprature=0, agent="sql_agent"):
         self.max_tokens = max_tokens
         self.model = model
         self.temperature = temprature
         self.max_try = max_try
         self.history = False
 
+        if agent == "sql_agent":
+            self.system_prompt = get_sql_system_prompt()
+        
+        elif agent == "analyst_agent":
+            self.system_prompt = get_visualisation_system_prompt()
+
         load_dotenv(".env")
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
-        print("Initialized LLMWrapper")
+        print(f"Initialized LLMWrapper: {True if openai.api_key else False}")
 
     def _send_request(self, system_prompt="", user_prompt=""):
         for _ in range(self.max_try):
@@ -79,25 +85,17 @@ class LLMWrapper:
                 self._handle_rate_limit()
                 return self._send_request(CHAT_PROMPT)
             
-            except openai.error.InvalidRequestError as e:
-                if len(prompt) > self.max_tokens:
-                    print("Prompt too long. Truncating...")
-                    prompt = prompt[:self.max_tokens]
-                    return self._send_request(prompt)
-                print("Invalid request:", e)
-                return {'error': 'invalid_request'}
-            
             except Exception as e:
                 print("Unhandled exception:", e)
-                return {'error': 'unknown'}
+                return {'error': 'unknown', 'message': e}
 
     def _handle_rate_limit(self):
         print("Rate limit exceeded. Waiting before retrying...")
         time.sleep(60) 
 
-    def generate_response(self, user_input, system_prompt=get_sql_system_prompt()):
+    def generate_response(self, user_input):
         """Generates a response based on the user input."""
-        response = self._send_request(system_prompt=system_prompt, user_prompt=user_input)
+        response = self._send_request(system_prompt=self.system_prompt, user_prompt=user_input)
         return response
 
     def reset_history(self):
@@ -105,7 +103,6 @@ class LLMWrapper:
 
 
 if __name__ == "__main__":
-
     wrapper = LLMWrapper()
 
     index = 0

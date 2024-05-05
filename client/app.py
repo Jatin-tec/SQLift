@@ -5,17 +5,35 @@ from wrapper.main import LLMWrapper
 from wrapper.db import run_query
 from client.utils.htmlTemplate import css
 from client.utils.htmlTemplate import bot_template, user_template
+from database.get_columns import fetch_columns
 
 def get_conversation(question):
     st.session_state.chat_history.append({"role": "user", "content": question})
-
-    response = st.session_state.wrapper.generate_response(user_input=question)
-
+    response = st.session_state.sql_agent.generate_response(user_input=question)
     return response
+
+def get_analyst_conversation(question):
+    st.session_state.visual_history.append({"role": "user", "content": question})
+    response = st.session_state.analyst.generate_response(user_input=question)
+    return response
+
+def extract_column_names(sql_query):
+    if 'SELECT *' in sql_query.upper():
+        return fetch_columns()
+    
+    pattern = r'SELECT\s+(.*?)\s+FROM'
+    match = re.search(pattern, sql_query, re.IGNORECASE)
+
+    if match:
+        columns = match.group(1).split(',')
+        return [column.strip() for column in columns]
+    else:
+        return []
 
 def handel_user_input(response):
     res_box = st.empty()
     response_msg = []
+
     for r in response:
             if r["choices"][0]["delta"] == {}:
                 break
@@ -24,9 +42,13 @@ def handel_user_input(response):
             result = "".join(response_msg)
             res_box.markdown(bot_template.replace("{{MSG}}", result), unsafe_allow_html=True)
 
-    st.session_state.chat_history.append({"role": "assistant", "content": "".join(response_msg)})
+    sql_match = re.search(r"```sql\n(.*)\n```", message["content"], re.DOTALL)            
 
-    st.session_state.wrapper.history = True
+    st.session_state.chat_history.append(
+        {"role": "assistant", "content": "".join(response_msg)},
+        {"role": "user", "content": question},
+        )
+
     for i, message in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
             st.write(user_template.replace("{{MSG}}", message["content"]), unsafe_allow_html=True)
@@ -37,14 +59,15 @@ def handel_user_input(response):
             if sql_match:
                 sql = sql_match.group(1)
                 res = run_query(sql, "transactions")
-                columns = re.search(r"```columns\n\n(.*)\n\n```", result, re.DOTALL)
-                if columns:
-                    columns = columns.group(1).split(",")
-                    df = pd.DataFrame(res, columns=columns)
+                columns = extract_column_names(sql)
+
                 df = pd.DataFrame(res)
+                
+                if columns:
+                    df = pd.DataFrame(res, columns=columns)
                 st.dataframe(df, use_container_width=True)
 
-    st.session_state.wrapper.history = st.session_state.chat_history
+    st.session_state.sql_agent.history = st.session_state.chat_history
 
 def main():
     st.set_page_config(page_title="SQLift", page_icon=":mailbox_with_mail:", layout="wide")
@@ -59,8 +82,8 @@ def main():
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        if "wrapper" not in st.session_state:
-            st.session_state.wrapper = LLMWrapper()
+        if "sql_agent" not in st.session_state:
+            st.session_state.sql_agent = LLMWrapper(agent="sql_agent")
 
         if "chat_index" not in st.session_state:
             st.session_state.chat_index = 0
@@ -72,4 +95,16 @@ def main():
                     handel_user_input(conversation)
 
     elif platform == "Plot":
-        st.write("Coming soon...")
+        question = st.text_input("Visualize your table:")
+
+        if "visual_history" not in st.session_state:
+            st.session_state.visual_history = []
+
+        if "analyst" not in st.session_state:
+            st.session_state.analyst = LLMWrapper(agent="analyst_agent")
+
+        if st.button("Send"):
+            with st.spinner("Searching..."):
+                if question:
+                    conversation = get_analyst_conversation(question)
+                    handel_user_input(conversation)

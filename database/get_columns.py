@@ -21,32 +21,41 @@ db_params = {
 # Specify the table for which you want to retrieve column names
 table_name = "transactions"
 
-try:
-    # Connect to the PostgreSQL server
-    connection = psycopg2.connect(**db_params)
+def fetch_columns():
+    response = None
+    try:
+        # Connect to the PostgreSQL server
+        connection = psycopg2.connect(**db_params)
 
-    # Create a cursor object using the cursor() method
-    cursor = connection.cursor()
+        # Create a cursor object using the cursor() method
+        cursor = connection.cursor()
 
-    # Execute a PostgreSQL query to get all column names of the specified table
-    cursor.execute(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{table_name}';")
+        # Execute a PostgreSQL query to get all column names of the specified table
+        cursor.execute(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{table_name}';")
 
-    # Fetch all the column names using the fetchall() method
-    columns = cursor.fetchall()
+        # Fetch all the column names using the fetchall() method
+        columns = cursor.fetchall()
 
-    if columns:
-        # Print the column names
-        for column in columns:
-            print(column[0:2])
-    else:
-        print(f"No such table '{table_name}' in the database.")
+        response = []
+        if columns:
+            # Print the column names
+            for column in columns:
+                response.append(column[0])
+            print(response)
+        else:
+            print(f"No such table '{table_name}' in the database.")
 
-except Error as e:
-    print("Error while connecting to PostgreSQL:", e)
+    except Error as e:
+        print("Error while connecting to PostgreSQL:", e)
+        return response
+       
+    finally:
+        # Close the cursor and connection
+        if connection:
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+            return response
 
-finally:
-    # Close the cursor and connection
-    if connection:
-        cursor.close()
-        connection.close()
-        print("PostgreSQL connection is closed")
+if __name__ == "__main__":
+    fetch_columns()
